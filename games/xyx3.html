@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大脑功能问答游戏</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Microsoft Yahei", "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    /* 游戏标题和说明 */
+    .game-header {
+      text-align: center;
+      margin-bottom: 30px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .game-title {
+      font-size: 2.8rem;
+      color: #ffd700;
+      text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+      margin-bottom: 10px;
+    }
+
+    .game-subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      margin-bottom: 20px;
+    }
+
+    /* 游戏信息面板 */
+    .game-info {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 15px 25px;
+      margin-bottom: 25px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .info-item {
+      text-align: center;
+    }
+
+    .info-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #ffd700;
+    }
+
+    /* 游戏主容器 */
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 900px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    /* 问题显示区域 */
+    .question-container {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+
+    .question-number {
+      font-size: 1rem;
+      color: #a8daff;
+      margin-bottom: 10px;
+    }
+
+    .question-text {
+      font-size: 1.5rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      color: #ffd700;
+    }
+
+    .question-image {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 10px;
+      margin: 15px auto;
+      display: block;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* 答案选项区域 */
+    .answers-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    @media (min-width: 768px) {
+      .answers-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .answer-option {
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 18px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .answer-option:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-3px);
+    }
+
+    .answer-option.selected {
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+      color: #333;
+      font-weight: bold;
+      border-color: #ffd700;
+    }
+
+    .answer-option.correct {
+      background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+      color: white;
+      border-color: #4ecdc4;
+    }
+
+    .answer-option.wrong {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+      color: white;
+      border-color: #ff6b6b;
+    }
+
+    .option-letter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      margin-right: 15px;
+      font-weight: bold;
+    }
+
+    .answer-option.selected .option-letter {
+      background: #333;
+      color: #ffd700;
+    }
+
+    /* 按钮样式 */
+    .game-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .game-btn {
+      padding: 12px 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .game-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .game-btn:active {
+      transform: scale(0.98);
+    }
+
+    .game-btn.next {
+      background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+    }
+
+    .game-btn.submit {
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+      color: #333;
+    }
+
+    .game-btn.reset {
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+      color: #333;
+    }
+
+    .game-btn.back {
+      background: linear-gradient(135deg, #a8daff 0%, #a8daff 100%);
+      color: #333;
+    }
+
+    /* 游戏消息 */
+    .game-message {
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      min-height: 50px;
+      color: #ffd700;
+      margin: 20px 0;
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    /* 完成界面 */
+    .completion-screen {
+      text-align: center;
+      display: none;
+      padding: 40px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 20px;
+      margin-top: 20px;
+    }
+
+    .completion-screen.show {
+      display: block;
+    }
+
+    .completion-icon {
+      font-size: 5rem;
+      margin-bottom: 20px;
+    }
+
+    .completion-title {
+      font-size: 2.5rem;
+      color: #ffd700;
+      margin-bottom: 20px;
+    }
+
+    .completion-stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin: 30px 0;
+    }
+
+    .stat-item {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px 25px;
+      border-radius: 15px;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #ffd700;
+    }
+
+    .stat-label {
+      font-size: 1rem;
+      opacity: 0.8;
+    }
+
+    .score-bar {
+      width: 100%;
+      height: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      margin: 30px 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .score-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+      width: 0%;
+      border-radius: 15px;
+      transition: width 1s ease;
+    }
+
+    .score-text {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* 进度条 */
+    .progress-container {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      margin: 20px 0;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+      width: 0%;
+      border-radius: 5px;
+      transition: width 0.5s ease;
+    }
+
+    /* 反馈动画 */
+    @keyframes correctPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes wrongShake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
+    .feedback-correct {
+      animation: correctPulse 0.5s;
+    }
+
+    .feedback-wrong {
+      animation: wrongShake 0.5s;
+    }
+
+    /* 滚动条美化 */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 215, 0, 0.5);
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 215, 0, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <!-- 游戏标题和说明 -->
+  <div class="game-header">
+    <h1 class="game-title">🧠 大脑功能问答游戏</h1>
+    <p class="game-subtitle">回答关于大脑功能的各种问题，挑战你的大脑知识，看看你能答对多少题</p>
+  </div>
+
+  <!-- 游戏信息面板 -->
+  <div class="game-info">
+    <div class="info-item">
+      <div class="info-label">当前分数</div>
+      <div class="info-value" id="currentScore">0</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">问题</div>
+      <div class="info-value" id="questionCounter">1/10</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">正确率</div>
+      <div class="info-value" id="accuracy">0%</div>
+    </div>
+  </div>
+
+  <!-- 游戏主容器 -->
+  <div class="game-container">
+    <!-- 问题显示区域 -->
+    <div class="question-container">
+      <div class="question-number" id="questionNumber">问题 #1</div>
+      <div class="question-text" id="questionText">
+        加载问题中...
+      </div>
+      <img class="question-image" id="questionImage" src="" alt="" style="display:none;">
+    </div>
+
+    <!-- 答案选项区域 -->
+    <div class="answers-container" id="answersContainer">
+      <!-- 答案选项将通过JavaScript动态生成 -->
+    </div>
+
+    <!-- 进度条 -->
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- 游戏消息 -->
+    <div class="game-message" id="gameMessage">
+      请选择你认为正确的答案
+    </div>
+
+    <!-- 游戏按钮 -->
+    <div class="game-buttons">
+      <button class="game-btn reset" id="resetGameBtn">重新开始</button>
+      <button class="game-btn back" id="backBtn">返回主页面</button>
+      <button class="game-btn submit" id="submitBtn" disabled>提交答案</button>
+      <button class="game-btn next" id="nextBtn" style="display:none;">下一题</button>
+    </div>
+
+    <!-- 完成界面 -->
+    <div class="completion-screen" id="completionScreen">
+      <div class="completion-icon">🏆</div>
+      <h2 class="completion-title" id="completionTitle">测试完成！</h2>
+
+      <!-- 分数条 -->
+      <div class="score-bar">
+        <div class="score-fill" id="scoreFill"></div>
+        <div class="score-text" id="scoreText">0%</div>
+      </div>
+
+      <!-- 统计数据 -->
+      <div class="completion-stats">
+        <div class="stat-item">
+          <div class="stat-value" id="finalScore">0</div>
+          <div class="stat-label">最终分数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="correctAnswers">0</div>
+          <div class="stat-label">正确题数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="finalAccuracy">0%</div>
+          <div class="stat-label">正确率</div>
+        </div>
+      </div>
+
+      <!-- 评级信息 -->
+      <div id="ratingMessage" style="margin: 25px 0; font-size: 1.2rem;"></div>
+
+      <!-- 知识总结 -->
+      <div id="knowledgeSummary" style="text-align: left; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; margin: 25px 0;">
+        <h3 style="color: #a8daff; margin-bottom: 15px;">📚 知识总结</h3>
+        <div id="summaryContent"></div>
+      </div>
+
+      <!-- 完成界面按钮 -->
+      <div class="game-buttons">
+        <button class="game-btn reset" id="playAgainBtn">再玩一次</button>
+        <button class="game-btn back" id="backBtn2">返回主页面</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 大脑功能问题数据 ====================
+    const brainQuestions = [
+      {
+        id: 1,
+        question: "大脑的哪个部分主要负责决策、计划和运动控制？",
+        options: [
+          "额叶",
+          "顶叶",
+          "颞叶",
+          "枕叶"
+        ],
+        correctAnswer: 0,
+        explanation: "额叶是大脑的'指挥中心'，负责高级认知功能，包括决策制定、问题解决、计划执行、情绪调节和运动控制。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      },
+      {
+        id: 2,
+        question: "哪部分大脑负责处理视觉信息？",
+        options: [
+          "额叶",
+          "顶叶",
+          "颞叶",
+          "枕叶"
+        ],
+        correctAnswer: 3,
+        explanation: "枕叶是视觉信息处理的中心，来自眼睛的视觉信号经过视神经传递到枕叶的初级视觉皮层进行复杂处理。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      },
+      {
+        id: 3,
+        question: "海马体主要与哪种功能相关？",
+        options: [
+          "情绪处理",
+          "记忆形成",
+          "运动协调",
+          "语言理解"
+        ],
+        correctAnswer: 1,
+        explanation: "海马体位于颞叶内侧，对长期记忆的形成和空间导航至关重要。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      },
+      {
+        id: 4,
+        question: "布洛卡区位于大脑哪个部分？",
+        options: [
+          "额叶",
+          "顶叶",
+          "颞叶",
+          "枕叶"
+        ],
+        correctAnswer: 0,
+        explanation: "布洛卡区位于左侧额叶，负责语言表达和产生。损伤会导致运动性失语症。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      },
+      {
+        id: 5,
+        question: "处理触觉和空间信息主要是哪个脑叶的功能？",
+        options: [
+          "额叶",
+          "顶叶",
+          "颞叶",
+          "枕叶"
+        ],
+        correctAnswer: 1,
+        explanation: "顶叶主要负责处理感觉信息，特别是触觉、温度、疼痛和本体感觉，还参与空间定位和注意力分配。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      },
+      {
+        id: 6,
+        question: "杏仁核主要处理哪种情绪？",
+        options: [
+          "快乐",
+          "悲伤",
+          "恐惧",
+          "愤怒"
+        ],
+        correctAnswer: 2,
+        explanation: "杏仁核位于颞叶深部，专门处理情绪反应，特别是恐惧和威胁检测。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      },
+      {
+        id: 7,
+        question: "小脑的主要功能是什么？",
+        options: [
+          "思考决策",
+          "协调运动和平衡",
+          "处理视觉信息",
+          "形成记忆"
+        ],
+        correctAnswer: 1,
+        explanation: "小脑位于大脑后方，主要负责协调随意运动、维持姿势和平衡。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      },
+      {
+        id: 8,
+        question: "韦尼克区负责什么功能？",
+        options: [
+          "语言表达",
+          "语言理解",
+          "运动控制",
+          "视觉处理"
+        ],
+        correctAnswer: 1,
+        explanation: "韦尼克区位于左侧颞叶，负责语言理解。损伤会导致感觉性失语症。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      },
+      {
+        id: 9,
+        question: "大脑的哪部分控制基本生命功能如呼吸和心跳？",
+        options: [
+          "大脑皮层",
+          "小脑",
+          "脑干",
+          "边缘系统"
+        ],
+        correctAnswer: 2,
+        explanation: "脑干位于大脑底部，控制基本生命功能如呼吸、心跳和血压。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      },
+      {
+        id: 10,
+        question: "初级运动皮层位于哪个脑回？",
+        options: [
+          "中央前回",
+          "中央后回",
+          "角回",
+          "梭状回"
+        ],
+        correctAnswer: 0,
+        explanation: "初级运动皮层位于中央前回，负责计划和执行自主运动。",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Brain_gyri_and_sulci.svg/300px-Brain_gyri_and_sulci.svg.png"
+      }
+    ];
+
+    // ==================== 游戏状态变量 ====================
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let selectedAnswer = null;
+    let gameActive = true;
+    let correctAnswers = 0;
+    let userAnswers = [];
+
+    // ==================== DOM元素引用 ====================
+    const questionNumber = document.getElementById('questionNumber');
+    const questionText = document.getElementById('questionText');
+    const questionImage = document.getElementById('questionImage');
+    const answersContainer = document.getElementById('answersContainer');
+    const gameMessage = document.getElementById('gameMessage');
+    const currentScore = document.getElementById('currentScore');
+    const questionCounter = document.getElementById('questionCounter');
+    const accuracy = document.getElementById('accuracy');
+    const progressBar = document.getElementById('progressBar');
+    const submitBtn = document.getElementById('submitBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const completionScreen = document.getElementById('completionScreen');
+    const finalScore = document.getElementById('finalScore');
+    const correctAnswersElement = document.getElementById('correctAnswers');
+    const finalAccuracy = document.getElementById('finalAccuracy');
+    const scoreFill = document.getElementById('scoreFill');
+    const scoreText = document.getElementById('scoreText');
+    const ratingMessage = document.getElementById('ratingMessage');
+    const summaryContent = document.getElementById('summaryContent');
+    const completionTitle = document.getElementById('completionTitle');
+
+    // ==================== 返回主页面的函数 ====================
+    function returnToMainPage() {
+      // 跳转到指定的主页URL
+      const mainPageUrl = 'index.html';
+
+      // 尝试关闭当前窗口（如果允许的话）
+      try {
+        // 首先尝试用window.open打开主页
+        window.open(mainPageUrl, '_self');
+
+        // 延迟一小段时间后尝试关闭当前窗口
+        setTimeout(() => {
+          // 检查当前窗口是否可以被关闭
+          if (window.opener) {
+            // 如果有opener，说明是从主页面打开的
+            window.close();
+          } else {
+            // 如果没有opener，尝试使用其他方式
+            console.log('返回主页面成功！如果当前窗口没有自动关闭，请手动关闭。');
+          }
+        }, 100);
+      } catch (error) {
+        // 如果无法自动关闭，显示提示信息并跳转
+        console.log('由于浏览器安全限制，无法自动关闭窗口。');
+        alert('正在返回主页面...请手动关闭此游戏窗口。');
+        window.location.href = mainPageUrl;
+      }
+    }
+
+    // ==================== 游戏初始化 ====================
+    function initGame() {
+      // 重置游戏状态
+      currentQuestionIndex = 0;
+      score = 0;
+      selectedAnswer = null;
+      gameActive = true;
+      correctAnswers = 0;
+      userAnswers = [];
+
+      // 更新显示
+      currentScore.textContent = '0';
+      questionCounter.textContent = '1/10';
+      accuracy.textContent = '0%';
+      progressBar.style.width = '0%';
+      gameMessage.textContent = '请选择你认为正确的答案';
+      gameMessage.style.color = '#ffd700';
+
+      // 隐藏完成界面
+      completionScreen.classList.remove('show');
+
+      // 重置按钮状态
+      submitBtn.disabled = true;
+      submitBtn.style.display = 'block';
+      nextBtn.style.display = 'none';
+
+      // 加载第一个问题
+      loadQuestion(currentQuestionIndex);
+    }
+
+    // ==================== 加载问题 ====================
+    function loadQuestion(index) {
+      if (index >= brainQuestions.length) {
+        completeGame();
+        return;
+      }
+
+      const question = brainQuestions[index];
+
+      // 更新问题显示
+      questionNumber.textContent = `问题 #${question.id}`;
+      questionText.textContent = question.question;
+      questionCounter.textContent = `${index + 1}/${brainQuestions.length}`;
+
+      // 更新进度条
+      const progress = ((index) / brainQuestions.length) * 100;
+      progressBar.style.width = `${progress}%`;
+
+      // 如果有图片，显示图片
+      if (question.image) {
+        questionImage.src = question.image;
+        questionImage.style.display = 'block';
+      } else {
+        questionImage.style.display = 'none';
+      }
+
+      // 生成答案选项
+      answersContainer.innerHTML = '';
+      const optionLetters = ['A', 'B', 'C', 'D'];
+
+      question.options.forEach((option, i) => {
+        const answerOption = document.createElement('div');
+        answerOption.className = 'answer-option';
+        answerOption.innerHTML = `
+          <span class="option-letter">${optionLetters[i]}</span>
+          <span class="option-text">${option}</span>
+        `;
+        answerOption.dataset.index = i;
+
+        answerOption.addEventListener('click', () => selectAnswer(i, answerOption));
+        answersContainer.appendChild(answerOption);
+      });
+
+      // 重置选择状态
+      selectedAnswer = null;
+      submitBtn.disabled = true;
+      submitBtn.style.display = 'block';
+      nextBtn.style.display = 'none';
+      gameMessage.textContent = '请选择你认为正确的答案';
+      gameMessage.style.color = '#ffd700';
+    }
+
+    // ==================== 选择答案 ====================
+    function selectAnswer(index, element) {
+      if (!gameActive) return;
+
+      // 取消之前的选择
+      const previousSelected = document.querySelector('.answer-option.selected');
+      if (previousSelected) {
+        previousSelected.classList.remove('selected');
+      }
+
+      // 选择新答案
+      selectedAnswer = index;
+      element.classList.add('selected');
+      submitBtn.disabled = false;
+    }
+
+    // ==================== 提交答案 ====================
+    function submitAnswer() {
+      if (selectedAnswer === null || !gameActive) return;
+
+      const question = brainQuestions[currentQuestionIndex];
+      const isCorrect = selectedAnswer === question.correctAnswer;
+
+      // 记录用户答案
+      userAnswers.push({
+        questionId: question.id,
+        userAnswer: selectedAnswer,
+        correctAnswer: question.correctAnswer,
+        isCorrect: isCorrect
+      });
+
+      // 显示正确答案和错误答案
+      const answerOptions = document.querySelectorAll('.answer-option');
+      answerOptions.forEach((option, i) => {
+        if (i === question.correctAnswer) {
+          option.classList.add('correct');
+        } else if (i === selectedAnswer && !isCorrect) {
+          option.classList.add('wrong');
+        }
+        option.style.pointerEvents = 'none'; // 禁用进一步点击
+      });
+
+      // 更新分数
+      if (isCorrect) {
+        score += 10;
+        correctAnswers++;
+        gameMessage.innerHTML = `✅ 回答正确！ +10分<br><small>${question.explanation}</small>`;
+        gameMessage.style.color = '#4ecdc4';
+        gameMessage.classList.add('feedback-correct');
+      } else {
+        gameMessage.innerHTML = `❌ 回答错误！<br><small>正确答案是: ${question.options[question.correctAnswer]}<br>${question.explanation}</small>`;
+        gameMessage.style.color = '#ff6b6b';
+        gameMessage.classList.add('feedback-wrong');
+      }
+
+      // 更新分数显示
+      currentScore.textContent = score;
+      const currentAccuracy = Math.round((correctAnswers / (currentQuestionIndex + 1)) * 100);
+      accuracy.textContent = `${currentAccuracy}%`;
+
+      // 更改按钮状态
+      submitBtn.style.display = 'none';
+      nextBtn.style.display = 'block';
+      gameActive = false;
+    }
+
+    // ==================== 下一题 ====================
+    function nextQuestion() {
+      // 移除反馈动画
+      gameMessage.classList.remove('feedback-correct', 'feedback-wrong');
+
+      currentQuestionIndex++;
+      if (currentQuestionIndex < brainQuestions.length) {
+        loadQuestion(currentQuestionIndex);
+        gameActive = true;
+      } else {
+        completeGame();
+      }
+    }
+
+    // ==================== 完成游戏 ====================
+    function completeGame() {
+      gameActive = false;
+
+      // 计算最终统计数据
+      const finalAccuracyValue = Math.round((correctAnswers / brainQuestions.length) * 100);
+      const finalScoreValue = score;
+
+      // 更新完成界面
+      finalScore.textContent = finalScoreValue;
+      correctAnswersElement.textContent = `${correctAnswers}/${brainQuestions.length}`;
+      finalAccuracy.textContent = `${finalAccuracyValue}%`;
+
+      // 更新分数条
+      scoreFill.style.width = `${finalAccuracyValue}%`;
+      scoreText.textContent = `${finalAccuracyValue}%`;
+
+      // 设置评级消息
+      let rating = '';
+      let title = '';
+
+      if (finalAccuracyValue >= 90) {
+        rating = '🏅 大脑专家！你对大脑结构了如指掌！';
+        title = '太棒了！你是大脑专家！';
+      } else if (finalAccuracyValue >= 70) {
+        rating = '🥈 非常出色！你对大脑有很好的理解！';
+        title = '非常出色！';
+      } else if (finalAccuracyValue >= 50) {
+        rating = '🥉 不错的成绩！继续学习会更好！';
+        title = '不错的成绩！';
+      } else {
+        rating = '📚 还需要多学习哦，加油！';
+        title = '继续加油！';
+      }
+
+      ratingMessage.textContent = rating;
+      completionTitle.textContent = title;
+
+      // 生成知识总结
+      generateKnowledgeSummary();
+
+      // 显示完成界面
+      completionScreen.classList.add('show');
+    }
+
+    // ==================== 生成知识总结 ====================
+    function generateKnowledgeSummary() {
+      let summaryHTML = '<ul style="list-style-type: none; padding-left: 0;">';
+
+      // 找出用户答错的问题
+      const wrongAnswers = userAnswers.filter(answer => !answer.isCorrect);
+
+      if (wrongAnswers.length === 0) {
+        summaryHTML += '<li style="margin-bottom: 10px;">🎉 太完美了！所有问题都回答正确！</li>';
+      } else {
+        summaryHTML += '<li style="margin-bottom: 15px; color: #a8daff;">以下是您需要复习的知识点：</li>';
+
+        wrongAnswers.forEach((wrong, index) => {
+          const question = brainQuestions.find(q => q.id === wrong.questionId);
+          if (question) {
+            summaryHTML += `
+              <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <strong>问题 ${index + 1}:</strong> ${question.question}<br>
+                <span style="color: #ff6b6b;">❌ 您的答案: ${question.options[wrong.userAnswer]}</span><br>
+                <span style="color: #4ecdc4;">✅ 正确答案: ${question.options[question.correctAnswer]}</span><br>
+                <small>${question.explanation}</small>
+              </li>
+            `;
+          }
+        });
+      }
+
+      summaryHTML += '</ul>';
+      summaryContent.innerHTML = summaryHTML;
+    }
+
+    // ==================== 按钮事件监听 ====================
+    document.getElementById('resetGameBtn').addEventListener('click', () => {
+      if (confirm('确定要重新开始游戏吗？当前进度将丢失。')) {
+        initGame();
+      }
+    });
+
+    document.getElementById('backBtn').addEventListener('click', () => {
+      if (confirm('确定要返回主页面吗？当前游戏进度将丢失。')) {
+        returnToMainPage();
+      }
+    });
+
+    document.getElementById('backBtn2').addEventListener('click', () => {
+      if (confirm('确定要返回主页面吗？')) {
+        returnToMainPage();
+      }
+    });
+
+    document.getElementById('submitBtn').addEventListener('click', submitAnswer);
+    document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+    document.getElementById('playAgainBtn').addEventListener('click', initGame);
+
+    // ==================== 键盘快捷键 ====================
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        // 取消选择
+        const selected = document.querySelector('.answer-option.selected');
+        if (selected) {
+          selected.classList.remove('selected');
+          selectedAnswer = null;
+          submitBtn.disabled = true;
+          gameMessage.textContent = '选择已取消，请重新选择答案';
+        }
+      }
+
+      // 数字键1-4选择答案
+      if (event.key >= '1' && event.key <= '4' && gameActive) {
+        const index = parseInt(event.key) - 1;
+        const answerOptions = document.querySelectorAll('.answer-option');
+        if (index < answerOptions.length) {
+          selectAnswer(index, answerOptions[index]);
+        }
+      }
+
+      // Enter键提交答案
+      if (event.key === 'Enter' && submitBtn.style.display !== 'none') {
+        if (!submitBtn.disabled) {
+          submitAnswer();
+        }
+      }
+
+      // 空格键或N键下一题
+      if ((event.key === ' ' || event.key === 'n' || event.key === 'N') && nextBtn.style.display !== 'none') {
+        nextQuestion();
+      }
+
+      // Alt+H返回主页
+      if (event.key === 'h' || event.key === 'H') {
+        if (event.altKey) {
+          event.preventDefault();
+          returnToMainPage();
+        }
+      }
+    });
+
+    // ==================== 初始化游戏 ====================
+    window.addEventListener('DOMContentLoaded', () => {
+      initGame();
+
+      // 添加游戏提示
+      setTimeout(() => {
+        gameMessage.innerHTML = '提示：点击答案选项进行选择，按数字键1-4可以快速选择<br>按Enter键提交答案，按空格键或N键进入下一题<br>按Alt+H可以快速返回主页面';
+      }, 3000);
+    });
+  </script>
+</body>
+</html>

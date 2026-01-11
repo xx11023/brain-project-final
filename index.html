@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>探索大脑 - 互动式大脑外侧视图</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Microsoft Yahei", "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    /* 顶部导航 */
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(102, 126, 234, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin-left: 25px;
+      font-size: 1rem;
+      transition: color 0.3s;
+    }
+    nav a:hover {
+      color: #ffd700;
+    }
+
+    /* 第一屏：大脑2D图谱展示区 */
+    #hero-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding-top: 70px;
+    }
+
+    #brain-container {
+      width: 85%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .section-title h2 {
+      font-size: 2.8rem;
+      color: #ffd700;
+      text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+      margin-bottom: 10px;
+    }
+
+    .section-title p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      max-width: 800px;
+      line-height: 1.6;
+    }
+
+    /* 大脑地图容器 */
+    #brain-map-container {
+      width: 100%;
+      max-width: 800px;
+      position: relative;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+      margin: 0 auto;
+    }
+
+    #brain-map {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: pointer;
+    }
+
+    /* 区域高亮效果 */
+    .region-highlight {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 5;
+      mix-blend-mode: multiply;
+    }
+
+    .region-highlight.active {
+      opacity: 0.8;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.7)); }
+      50% { filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.9)); }
+      100% { filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.7)); }
+    }
+
+    /* 悬浮信息提示框 */
+    #hoverInfo {
+      position: absolute;
+      top: 50%;
+      right: 50px;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(15px);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 15px;
+      padding: 25px;
+      width: 300px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      z-index: 100;
+    }
+    #hoverInfo.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #hoverInfo h3 {
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+      color: #ffd700;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+    #hoverInfo p {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 15px;
+      color: #ff6b35;
+      font-weight: 600;
+    }
+    #hoverInfo button {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    #hoverInfo button:hover {
+      transform: scale(1.05);
+    }
+
+    /* 详细信息展示区 */
+    #detail-section {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      display: none;
+      padding-top: 70px;
+    }
+    #detail-section.active {
+      display: flex;
+    }
+    #detail-left {
+      width: 50%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+    #detail-brain-container {
+      width: 100%;
+      height: 70%;
+      border-radius: 15px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #detail-image {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+      transition: transform 0.5s ease;
+    }
+    #detail-left h2 {
+      font-size: 2.2rem;
+      margin-top: 20px;
+      color: #ffd700;
+      text-align: center;
+    }
+    #detail-right {
+      width: 50%;
+      height: 100%;
+      padding: 50px;
+      overflow-y: auto;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+    }
+    #detail-right h3 {
+      font-size: 1.5rem;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      color: #a8daff;
+    }
+    #detail-right p, #detail-right ul {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      margin-bottom: 15px;
+    }
+    #detail-right ul {
+      padding-left: 25px;
+    }
+    #closeDetail {
+      position: absolute;
+      top: 90px;
+      right: 30px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid #fff;
+      color: #fff;
+      font-size: 1.5rem;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    #closeDetail:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: rotate(90deg);
+    }
+
+    /* 内容区域 */
+    .content-section {
+      min-height: 100vh;
+      padding: 80px 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 游戏区 */
+    #game-section {
+      background: linear-gradient(135deg, rgba(118, 75, 162, 0.8) 0%, rgba(102, 126, 234, 0.8) 100%);
+    }
+
+    .games-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px;
+      width: 100%;
+      max-width: 900px;
+      margin-top: 40px;
+    }
+
+    .game-card {
+      width: 400px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 35px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      transition: transform 0.3s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .game-card:hover {
+      transform: translateY(-10px);
+    }
+
+    .game-icon {
+      font-size: 3.5rem;
+      margin-bottom: 25px;
+    }
+
+    .game-card h3 {
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+      color: #ffd700;
+      text-align: center;
+    }
+
+    .game-card p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .game-card button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .game-card button:hover {
+      transform: scale(1.05);
+    }
+
+    /* 视频区 */
+    #video-section {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+    }
+
+    .videos-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px;
+      width: 100%;
+      max-width: 1200px;
+      margin-top: 40px;
+    }
+
+    .video-card {
+      width: 500px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      transition: transform 0.3s;
+    }
+
+    .video-card:hover {
+      transform: translateY(-10px);
+    }
+
+    .video-thumbnail {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .video-card-content {
+      padding: 25px;
+    }
+
+    .video-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: #ffd700;
+    }
+
+    .video-card p {
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .video-card button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .video-card button:hover {
+      transform: scale(1.05);
+    }
+
+    /* 更多学习链接 */
+    #more-link {
+      text-align: center;
+      margin-top: 50px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    #more-link a {
+      color: #ffd700;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-decoration: none;
+      transition: all 0.3s;
+      display: inline-block;
+      padding: 10px 20px;
+      border: 2px solid #ffd700;
+      border-radius: 10px;
+    }
+
+    #more-link a:hover {
+      background-color: #ffd700;
+      color: #333;
+    }
+
+    /* 调试面板样式 - 隐藏 */
+    #debug-panel {
+      font-family: 'Consolas', 'Monaco', monospace;
+      display: none !important; /* 隐藏调试面板 */
+    }
+
+    /* 坐标显示框 */
+    #coordinate-display {
+      position: fixed;
+      top: 100px;
+      left: 20px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 1000;
+      display: none;
+      border: 1px solid rgba(255,215,0,0.3);
+    }
+
+    /* 滚动条美化 */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 215, 0, 0.5);
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 215, 0, 0.8);
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 1100px) {
+      #detail-section {
+        flex-direction: column;
+      }
+      #detail-left, #detail-right {
+        width: 100%;
+        height: 50%;
+      }
+      #detail-right {
+        padding: 30px;
+      }
+      .video-card {
+        width: 100%;
+        max-width: 500px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        padding: 15px;
+      }
+      nav {
+        margin-top: 15px;
+      }
+      nav a {
+        margin: 0 10px;
+      }
+      .game-card {
+        width: 100%;
+        max-width: 400px;
+        padding: 25px;
+      }
+      .content-section {
+        padding: 60px 20px;
+      }
+      #hoverInfo {
+        position: fixed;
+        top: auto;
+        bottom: 30px;
+        right: 30px;
+        left: 30px;
+        transform: none;
+        width: auto;
+      }
+      #debug-panel {
+        display: none;
+      }
+      #coordinate-display {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <header>
+    <h1>🧠 探索大脑 - 外侧视图</h1>
+    <nav>
+      <a href="#hero-section">大脑图谱</a>
+      <a href="#game-section">互动游戏</a>
+      <a href="#video-section">科普视频</a>
+    </nav>
+  </header>
+
+  <!-- 第一屏：大脑2D图谱 -->
+  <section id="hero-section">
+    <div id="brain-container">
+      <div class="section-title">
+        <h2>大脑外侧视图</h2>
+        <p>大脑外侧视图展示大脑皮层的外表面，包括额叶、顶叶、颞叶、枕叶、小脑以及脑干（脑桥和延髓）等区域。每个区域都有独特的功能，共同协作完成复杂的认知和行为活动。</p>
+      </div>
+
+      <div id="brain-map-container">
+        <!-- 大脑图片 -->
+        <img id="brain-map" src="images/brain.jpg" alt="大脑外侧视图">
+        <!-- 高亮区域容器 - 现在改为透明的div层 -->
+        <div id="highlight-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+      </div>
+
+      <!-- 悬浮信息提示框 -->
+      <div id="hoverInfo">
+        <h3 id="regionName">悬浮查看脑区</h3>
+        <p id="regionBrief">将鼠标移动到大脑图谱上不同颜色的区域，查看各个脑区的功能简介</p>
+        <button id="learnMoreBtn" style="display:none;">深入了解</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 详细信息展示区 -->
+  <div id="detail-section">
+    <button id="closeDetail">✕</button>
+    <div id="detail-left">
+      <div id="detail-brain-container">
+        <img id="detail-image" src="" alt="脑区详细结构图">
+      </div>
+      <h2 id="detailRegionName">脑区名称</h2>
+    </div>
+    <div id="detail-right">
+      <h3>📍 位置与结构</h3>
+      <p id="detailLocation">位置描述...</p>
+      <h3>⚡ 主要功能</h3>
+      <p id="detailFunction">功能描述...</p>
+      <h3>🔬 包含分区及功能</h3>
+      <div id="detailSubregions">
+        <!-- 分区内容将通过JavaScript动态生成 -->
+      </div>
+      <h3>🏥 相关疾病</h3>
+      <p id="detailDisease">疾病信息...</p>
+    </div>
+  </div>
+
+  <!-- 游戏区 -->
+  <section id="game-section" class="content-section">
+    <div class="section-title">
+      <h2>🧩 大脑知识互动游戏</h2>
+      <p>通过有趣的游戏加深对大脑结构的理解和记忆，每个游戏都针对大脑学习的不同方面</p>
+    </div>
+
+    <div class="games-container">
+      <!-- 游戏1：大脑分区配对 -->
+      <div class="game-card">
+        <div class="game-icon">🧠</div>
+        <h3>大脑分区配对</h3>
+        <p>将大脑各分区名称与它们的功能描述正确配对，测试你对大脑结构的了解程度。</p>
+        <button id="game1Btn">开始游戏</button>
+      </div>
+
+      <!-- 游戏2：大脑功能问答 -->
+      <div class="game-card">
+        <div class="game-icon">❓</div>
+        <h3>大脑功能问答</h3>
+        <p>回答关于大脑功能的各种问题，挑战你的大脑知识，看看你能答对多少题。</p>
+        <button id="game2Btn">开始游戏</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 视频学习区 -->
+  <section id="video-section" class="content-section">
+    <div class="section-title">
+      <h2>📺 大脑科普趣味视频</h2>
+      <p>通过生动的视频讲解，深入了解大脑的结构和功能，适合初学者系统学习大脑知识</p>
+    </div>
+
+    <div class="videos-container">
+      <!-- 视频1：大脑外侧视图讲解 -->
+      <div class="video-card">
+        <img class="video-thumbnail" src="https://img.bilibili.com/8d7f1a6b4a2f4c9e8b0f3c7d9e5f8a2b.jpg" alt="大脑外侧视图基本讲解">
+        <div class="video-card-content">
+          <h3>大脑外侧视图基本讲解</h3>
+          <p>详细讲解大脑外侧视图的结构，包括额叶、顶叶、颞叶和枕叶的位置、分区和主要功能。</p>
+          <button id="video1Btn">观看视频</button>
+        </div>
+      </div>
+
+      <!-- 视频2：大脑内侧视图讲解 -->
+      <div class="video-card">
+        <img class="video-thumbnail" src="https://img.bilibili.com/9e8f2b7c5d3a1f4e8c0b5d7f9a2c4e6d.jpg" alt="大脑内侧视图基本讲解">
+        <div class="video-card-content">
+          <h3>大脑内侧视图基本讲解</h3>
+          <p>讲解大脑内侧视图的结构，包括胼胝体、丘脑、下丘海等内部结构的功能和相互关系。</p>
+          <button id="video2Btn">观看视频</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 更多学习链接 -->
+    <div id="more-link">
+      <p style="margin-bottom: 15px; font-size: 1.1rem;">想了解更多关于大脑的知识吗？</p>
+      <a href="https://search.bilibili.com/all?keyword=%E4%BA%BA%E7%9A%84%E5%A4%A7%E8%84%91&from_source=webtop_search&spm_id_from=333.1007&search_source=5" target="_blank">点击这里探索更多大脑相关内容</a>
+    </div>
+  </section>
+
+  <!-- 坐标显示框 -->
+  <div id="coordinate-display">x: 0, y: 0</div>
+
+  <script>
+    // ==================== 大脑分区数据 ====================
+    const brainRegions = {
+      'frontal': {
+        id: 'frontal',
+        name: '额叶',
+        brief: '负责决策、计划和运动控制',
+        location: '位于大脑前部，占据额骨内侧区域，是大脑皮层中最大的叶。',
+        function: '额叶是大脑的"指挥中心"，负责高级认知功能，包括决策制定、问题解决、计划执行、情绪调节和运动控制。',
+        imagePath: 'images/frontal.png',
+        subregions: [
+          { name: '前额叶皮层', location: '位于额叶最前部', description: '负责高级认知功能，包括决策制定、问题解决、计划执行和情绪调节。' },
+          { name: '运动皮层', location: '位于额叶后部，中央前回', description: '负责自主运动的计划和执行。' }
+        ],
+        disease: '额叶损伤可能导致人格改变、判断力下降、冲动行为增加等。'
+      },
+      'parietal': {
+        id: 'parietal',
+        name: '顶叶',
+        brief: '处理触觉和空间信息',
+        location: '位于额叶后方，枕叶前方，头顶部位，分为上下两部分。',
+        function: '顶叶主要负责处理感觉信息，特别是触觉、温度、疼痛和本体感觉。它还参与空间定位、注意力分配和数学运算。',
+        imagePath: 'images/parietal.png',
+        subregions: [
+          { name: '初级体感皮层', location: '位于顶叶前部，中央后回', description: '接收和处理全身的触觉信息，包括轻触、压力、温度和疼痛。' },
+          { name: '顶上小叶', location: '位于顶叶上部', description: '参与空间注意力整合和手眼协调，对空间感知至关重要。' }
+        ],
+        disease: '顶叶损伤可能导致感觉缺失、空间定向障碍等症状。'
+      },
+      'temporal': {
+        id: 'temporal',
+        name: '颞叶',
+        brief: '负责听觉和记忆形成',
+        location: '位于大脑两侧，太阳穴附近区域，分为上、中、下三部分。',
+        function: '颞叶主要负责听觉处理、语言理解、记忆形成和情绪调节。海马体位于颞叶内侧，是记忆形成的关键结构。',
+        imagePath: 'images/temporal.png',
+        subregions: [
+          { name: '初级听觉皮层', location: '位于颞叶上部的颞横回', description: '处理基本的听觉信息，如声音的频率和强度。' },
+          { name: '海马体', location: '位于颞叶内侧深部', description: '负责记忆形成和空间导航，对长期记忆的形成至关重要。' }
+        ],
+        disease: '颞叶癫痫是最常见的局灶性癫痫类型。颞叶损伤可能导致记忆障碍、听觉障碍等。'
+      },
+      'occipital': {
+        id: 'occipital',
+        name: '枕叶',
+        brief: '处理视觉信息',
+        location: '位于大脑后部，头骨枕骨区域，是大脑皮层中最小的叶。',
+        function: '枕叶是视觉信息处理的中心。来自眼睛的视觉信号经过视神经传递到枕叶的初级视觉皮层，然后进行复杂的视觉信息处理。',
+        imagePath: 'images/occipital.png',
+        subregions: [
+          { name: '初级视觉皮层（V1）', location: '位于枕叶后部，距状裂周围', description: '接收来自眼睛的直接输入，处理基本的视觉特征如边缘、方向和空间频率。' },
+          { name: '次级视觉皮层（V2-V5）', location: '位于初级视觉皮层周围', description: '处理更复杂的视觉特征，包括颜色、形状、运动和深度感知。' }
+        ],
+        disease: '枕叶损伤可能导致视野缺损、视觉失认、色盲等症状。'
+      },
+      'cerebellum': {
+        id: 'cerebellum',
+        name: '小脑',
+        brief: '协调运动和平衡',
+        location: '位于大脑后方，大脑半球下方，由两个半球和中间的蚓部组成。',
+        function: '小脑是运动协调中心，主要负责协调随意运动、维持姿势和平衡、调节肌肉张力，以及参与运动学习。',
+        imagePath: 'images/cerebellum.png',
+        subregions: [
+          { name: '小脑半球', location: '位于小脑两侧', description: '主要负责四肢运动的协调和精细运动控制。' },
+          { name: '小脑蚓部', location: '位于小脑中间部分', description: '主要负责躯干和近端肢体的运动协调以及平衡维持。' }
+        ],
+        disease: '小脑损伤可能导致共济失调（运动不协调）、平衡障碍、震颤、肌张力降低等症状。'
+      },
+      'pons': {
+        id: 'pons',
+        name: '脑桥',
+        brief: '连接大脑和小脑，参与呼吸调节',
+        location: '位于脑干中部，延髓上方，中脑下方。脑桥名称意为"桥梁"，因其连接大脑各部分的纤维束而得名。',
+        function: '脑桥是脑干的重要组成部分，负责连接大脑皮层与小脑，传递运动信息。它还包含呼吸调节中枢，参与睡眠和觉醒的调节。',
+        imagePath: 'images/detail.png',
+        subregions: [
+          { name: '脑桥基底部', location: '位于脑桥前部', description: '包含大量横向和纵向纤维束，连接大脑皮层和小脑，传递运动信息。' },
+          { name: '呼吸调节中枢', location: '位于脑桥被盖部', description: '与延髓共同调节呼吸节律和深度，特别是调节吸气向呼气的转换。' }
+        ],
+        disease: '脑桥损伤可能导致面瘫、感觉障碍、呼吸异常、睡眠障碍等症状。'
+      },
+      'medulla': {
+        id: 'medulla',
+        name: '延髓',
+        brief: '控制基本生命功能',
+        location: '位于脑干最下部，脊髓上方，脑桥下方。延髓是连接脑和脊髓的关键结构。',
+        function: '延髓是生命中枢，控制基本生命功能如呼吸、心跳和血压。它还包含重要的反射中枢，参与吞咽、咳嗽、呕吐等反射活动。',
+        imagePath: 'images/detail.png',
+        subregions: [
+          { name: '心血管中枢', location: '位于延髓网状结构', description: '调节心率和血压，维持心血管系统的稳定。' },
+          { name: '呼吸中枢', location: '位于延髓网状结构', description: '产生基本的呼吸节律，控制呼吸的深度和频率。' }
+        ],
+        disease: '延髓损伤是危及生命的，可能导致呼吸停止、心跳骤停、血压失控等严重后果。'
+      }
+    };
+
+    // ==================== 原始坐标数据 ====================
+    const originalCoords = {
+      'frontal': "46,118,45,111,40,122,39,128,37,136,36,143,38,151,43,159,47,165,48,171,57,176,65,183,70,171,71,170,74,165,76,158,77,185,80,156,83,190,90,192,100,195,107,198,114,204,119,205,125,205,134,205,139,203,147,204,152,199,158,195,165,190,171,190,178,186,190,183,198,181,205,179,214,179,222,179,228,179,235,179,241,175,246,170,49,102,54,97,58,91,63,86,69,80,74,73,81,73,87,70,91,64,96,63,102,59,108,56,113,53,120,51,126,50,131,46,137,45,143,45,150,40,157,40,163,40,171,36,180,34,187,34,194,35,203,35,210,34,215,31,222,30,228,28,234,28,240,29,247,29,253,30,260,32,268,32,275,32,281,34,287,35,287,41,284,47,281,56,275,61,272,68,269,73,269,81,270,88,266,95,258,100,254,105,253,110,250,117,246,124,243,130,241,138,239,143,242,147,245,154,249,161",
+      'parietal': "285,36,285,42,284,49,281,57,279,63,275,67,269,70,269,78,269,85,268,91,268,98,261,103,256,109,251,117,245,123,245,130,245,138,245,146,245,155,245,166,249,174,256,176,266,177,272,181,277,183,285,185,292,186,301,188,309,193,319,196,327,194,333,190,339,196,343,200,352,205,359,205,365,199,366,189,371,186,375,178,381,171,387,169,392,163,399,163,402,155,402,148,405,141,410,134,408,125,403,116,401,109,393,103,393,94,389,86,381,82,373,78,367,70,362,64,355,59,348,55,341,52,335,51,327,47,319,43,312,39,302,37,294,36",
+      'occipital': "406,116,406,122,406,128,409,134,409,141,407,148,401,147,401,155,399,161,394,166,387,169,380,174,373,176,367,180,363,188,361,195,356,200,351,204,349,210,348,215,350,220,350,228,347,233,343,242,343,252,347,257,350,262,355,265,358,269,364,276,367,282,373,285,380,288,388,290,394,291,401,291,408,289,416,284,421,279,427,274,431,266,436,259,439,252,441,246,443,237,444,229,440,225,440,218,441,211,440,205,437,199,437,191,436,184,436,173,434,165,429,155,427,144,423,137,417,129,413,122",
+      'temporal': "350,206,343,198,338,195,332,193,326,191,320,195,310,194,303,192,296,184,289,185,281,185,275,187,274,195,269,183,264,178,256,178,248,178,239,178,232,180,223,182,217,181,207,180,199,181,189,182,182,183,172,188,164,191,156,195,152,200,149,209,146,219,144,226,144,233,144,242,148,247,154,251,159,254,166,258,171,259,174,265,179,270,183,274,189,274,198,278,203,275,210,273,216,273,223,272,231,269,240,266,249,265,256,263,264,263,269,264,274,269,280,271,286,273,292,274,299,272,306,273,316,274,322,277,329,277,338,279,344,277,348,213,350,220,348,226,346,234,344,240,343,248,343,254,348,260,354,262,358,268,362,273,365,278,358,279,350,277",
+      'cerebellum': "253,263,249,269,250,274,252,280,259,281,262,287,262,292,263,300,265,307,271,314,274,320,280,321,287,317,289,322,299,325,305,328,316,333,324,331,331,332,341,330,350,326,361,321,366,316,372,310,378,305,384,301,383,291,375,286,366,283,359,281,349,280,343,279,337,278,330,276,322,273,313,272,305,272,296,272,288,272,279,272,273,268,266,264,259,262",
+      'pons': "228,272,233,274,237,277,239,282,237,287,239,294,242,299,247,303,237,268,242,266,251,265,248,270,251,277,257,284,261,291,264,298,252,302,259,302",
+      'medulla': "250,309,256,307,262,301,266,307,269,315,273,320,280,321,287,324,290,330,290,336,254,316,257,324,261,330,263,335,266,343,273,345,281,344,288,343"
+    };
+
+    // ==================== 全局变量 ====================
+    let currentScale = 1.45;    // 经过测试的最优缩放值
+    let currentShift = 0;     // 经过测试的最优偏移值
+    let imageMapElement = null;
+    let highlightContainer = null;
+    let brainMap = null;
+    let highlightElements = {};
+    let imageWidth = 0;
+    let imageHeight = 0;
+    let displayWidth = 0;
+    let displayHeight = 0;
+
+    // ==================== 初始化函数 ====================
+    function initBrainMap() {
+      brainMap = document.getElementById('brain-map');
+      highlightContainer = document.getElementById('highlight-container');
+
+      // 图片加载完成后创建映射
+      brainMap.onload = function() {
+        console.log('大脑图片加载完成');
+        console.log('原始尺寸:', this.naturalWidth, 'x', this.naturalHeight);
+        console.log('显示尺寸:', this.width, 'x', this.height);
+
+        // 保存图片尺寸信息
+        imageWidth = this.naturalWidth;
+        imageHeight = this.naturalHeight;
+        displayWidth = this.width;
+        displayHeight = this.height;
+
+        console.log('尺寸比例:', displayWidth/imageWidth, displayHeight/imageHeight);
+
+        // 创建图片映射
+        createImageMap(currentScale, currentShift);
+
+        // 创建高亮层
+        createHighlightLayer();
+
+        // 初始化事件
+        initMapEvents();
+
+        // 添加鼠标坐标显示（但默认隐藏）
+        addCoordinateDisplay();
+
+        console.log('大脑地图初始化完成');
+      };
+
+      // 如果图片已经加载完成，立即初始化
+      if (brainMap.complete) {
+        brainMap.onload();
+      } else {
+        brainMap.onerror = function() {
+          console.error('图片加载失败');
+          showNotification('错误', '大脑图片加载失败，请检查文件路径');
+        };
+      }
+    }
+
+    // ==================== 创建图片映射 ====================
+    function createImageMap(scale = 1.0, rightShift = 0) {
+      // 移除旧的映射
+      if (imageMapElement) {
+        imageMapElement.remove();
+      }
+
+      // 创建新的映射
+      imageMapElement = document.createElement('map');
+      imageMapElement.name = 'brain-map-adjusted';
+      imageMapElement.id = 'brain-map-adjusted';
+
+      // 为每个脑区创建映射区域
+      for (const [regionId, coordsStr] of Object.entries(originalCoords)) {
+        const region = brainRegions[regionId];
+        if (!region) continue;
+
+        // 解析并调整坐标
+        const adjustedCoords = adjustCoordinates(coordsStr, scale, rightShift);
+
+        // 创建区域元素
+        const area = document.createElement('area');
+        area.shape = 'poly';
+        area.coords = adjustedCoords;
+        area.alt = region.name;
+        area.title = region.name + ': ' + region.brief;
+        area.setAttribute('data-region', regionId);
+
+        imageMapElement.appendChild(area);
+      }
+
+      // 添加到页面
+      document.body.appendChild(imageMapElement);
+
+      // 设置图片的映射
+      brainMap.useMap = '#brain-map-adjusted';
+
+      console.log(`图片映射已创建: 缩放=${scale}, 偏移=${rightShift}`);
+
+      // 同步更新高亮层
+      updateHighlightPositions(scale, rightShift);
+    }
+
+    // ==================== 调整坐标函数 ====================
+    function adjustCoordinates(coordsStr, scale, rightShift) {
+      const coordsArray = coordsStr.split(',').map(Number);
+      const adjustedCoords = [];
+
+      for (let i = 0; i < coordsArray.length; i += 2) {
+        let x = coordsArray[i];
+        let y = coordsArray[i + 1];
+
+        // 应用缩放和位移
+        x = Math.round(x * scale) + rightShift;
+        y = Math.round(y * scale);
+
+        adjustedCoords.push(x, y);
+      }
+
+      return adjustedCoords.join(',');
+    }
+
+    // ==================== 创建高亮层 ====================
+    function createHighlightLayer() {
+      // 清空高亮容器
+      highlightContainer.innerHTML = '';
+      highlightElements = {};
+
+      // 为每个脑区创建高亮元素
+      for (const [regionId, region] of Object.entries(brainRegions)) {
+        const highlightElement = document.createElement('div');
+        highlightElement.id = `highlight-${regionId}`;
+        highlightElement.className = 'region-highlight';
+        highlightElement.style.position = 'absolute';
+        highlightElement.style.top = '0';
+        highlightElement.style.left = '0';
+        highlightElement.style.width = '100%';
+        highlightElement.style.height = '100%';
+
+        highlightContainer.appendChild(highlightElement);
+        highlightElements[regionId] = highlightElement;
+      }
+
+      console.log('高亮层创建完成，共', Object.keys(highlightElements).length, '个区域');
+    }
+
+    // ==================== 更新高亮位置 ====================
+    function updateHighlightPositions(scale, rightShift) {
+      console.log('更新高亮位置，缩放:', scale, '偏移:', rightShift);
+
+      // 计算显示比例
+      const widthRatio = displayWidth / (imageWidth * scale);
+      const heightRatio = displayHeight / (imageHeight * scale);
+
+      // 更新每个区域的高亮
+      for (const [regionId, coordsStr] of Object.entries(originalCoords)) {
+        const coordsArray = coordsStr.split(',').map(Number);
+        let points = '';
+
+        for (let i = 0; i < coordsArray.length; i += 2) {
+          let x = coordsArray[i];
+          let y = coordsArray[i + 1];
+
+          // 应用相同的缩放和位移
+          x = (x * scale + rightShift) * widthRatio;
+          y = y * scale * heightRatio;
+
+          points += `${x},${y} `;
+        }
+
+        const highlightElement = highlightElements[regionId];
+        if (highlightElement) {
+          // 创建SVG高亮层
+          highlightElement.innerHTML = `
+            <svg width="${displayWidth}" height="${displayHeight}" style="position: absolute; top: 0; left: 0;">
+              <defs>
+                <filter id="glow-${regionId}">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feFlood flood-color="#ffd700" flood-opacity="0.8"/>
+                  <feComposite in2="blur" operator="in"/>
+                  <feMerge>
+                    <feMergeNode/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              <polygon
+                points="${points}"
+                fill="rgba(255, 215, 0, 0.3)"
+                stroke="#ffd700"
+                stroke-width="2"
+                stroke-linejoin="round"
+                filter="url(#glow-${regionId})"
+              />
+            </svg>
+          `;
+
+          console.log(`区域 ${regionId} 高亮更新完成`);
+        }
+      }
+
+      console.log('所有高亮位置更新完成');
+    }
+
+    // ==================== 初始化映射事件 ====================
+    function initMapEvents() {
+      const hoverInfo = document.getElementById('hoverInfo');
+      const regionName = document.getElementById('regionName');
+      const regionBrief = document.getElementById('regionBrief');
+      const learnMoreBtn = document.getElementById('learnMoreBtn');
+
+      const areas = document.querySelectorAll('map[name="brain-map-adjusted"] area');
+
+      console.log('初始化事件，找到', areas.length, '个区域');
+
+      areas.forEach(area => {
+        const regionId = area.getAttribute('data-region');
+        const region = brainRegions[regionId];
+
+        if (!region) return;
+
+        // 鼠标悬停事件
+        area.addEventListener('mouseenter', function(e) {
+          console.log('鼠标进入区域:', region.name);
+          regionName.textContent = region.name;
+          regionBrief.textContent = region.brief;
+          learnMoreBtn.style.display = 'block';
+          learnMoreBtn.onclick = () => showDetailView(region);
+          hoverInfo.classList.add('show');
+
+          // 显示高亮
+          const highlight = highlightElements[regionId];
+          if (highlight) {
+            highlight.classList.add('active');
+            console.log('高亮已显示:', region.name);
+          } else {
+            console.warn('找不到高亮元素:', regionId);
+          }
+        });
+
+        // 鼠标离开事件
+        area.addEventListener('mouseleave', function() {
+          console.log('鼠标离开区域:', region.name);
+          hoverInfo.classList.remove('show');
+          learnMoreBtn.style.display = 'none';
+
+          // 隐藏高亮
+          const highlight = highlightElements[regionId];
+          if (highlight) {
+            highlight.classList.remove('active');
+            console.log('高亮已隐藏:', region.name);
+          }
+        });
+
+        // 点击事件
+        area.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('点击区域:', region.name);
+          showDetailView(region);
+        });
+      });
+
+      // 添加鼠标移动坐标显示（但默认隐藏，开发者需要时可启用）
+      brainMap.addEventListener('mousemove', function(e) {
+        const rect = this.getBoundingClientRect();
+        const x = Math.round(e.clientX - rect.left);
+        const y = Math.round(e.clientY - rect.top);
+
+        const coordDisplay = document.getElementById('coordinate-display');
+        if (coordDisplay) {
+          coordDisplay.textContent = `x: ${x}, y: ${y}`;
+          coordDisplay.style.left = `${e.clientX + 10}px`;
+          coordDisplay.style.top = `${e.clientY + 10}px`;
+        }
+      });
+
+      // 默认不显示坐标显示框
+      document.getElementById('coordinate-display').style.display = 'none';
+    }
+
+    // ==================== 添加坐标显示框 ====================
+    function addCoordinateDisplay() {
+      const coordDisplay = document.createElement('div');
+      coordDisplay.id = 'coordinate-display';
+      coordDisplay.textContent = 'x: 0, y: 0';
+      document.body.appendChild(coordDisplay);
+    }
+
+    // ==================== 详细视图 ====================
+    function showDetailView(region) {
+      const detailSection = document.getElementById('detail-section');
+      detailSection.classList.add('active');
+
+      document.getElementById('detailRegionName').textContent = region.name;
+      document.getElementById('detailLocation').textContent = region.location;
+      document.getElementById('detailFunction').textContent = region.function;
+      document.getElementById('detailDisease').textContent = region.disease;
+
+      // 生成分区内容
+      const subregionsContainer = document.getElementById('detailSubregions');
+      subregionsContainer.innerHTML = '';
+
+      if (region.subregions && region.subregions.length > 0) {
+        region.subregions.forEach(item => {
+          const subregionItem = document.createElement('div');
+          subregionItem.className = 'subregion-item';
+          subregionItem.style.cssText = 'background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #ffd700;';
+
+          subregionItem.innerHTML = `
+            <strong style="color: #ffd700; display: block; margin-bottom: 8px; font-size: 1.2rem;">${item.name}</strong>
+            <div style="color: #a8daff; font-style: italic; margin-bottom: 8px; padding-left: 15px; border-left: 2px solid #4ecdc4;">该区位于${region.name}${item.location}</div>
+            <div style="color: #fff; opacity: 0.9;">${item.description}</div>
+          `;
+
+          subregionsContainer.appendChild(subregionItem);
+        });
+      } else {
+        subregionsContainer.innerHTML = '<p>该脑区没有进一步的分区。</p>';
+      }
+
+      // 设置详细图片
+      const detailImage = document.getElementById('detail-image');
+      detailImage.src = region.imagePath || "images/detail.png";
+      detailImage.alt = `${region.name}详细结构图`;
+
+      detailImage.onerror = function() {
+        console.warn(`${region.name}图片加载失败，使用默认图片`);
+        this.src = "images/detail.png";
+      };
+
+      console.log(`显示详细视图: ${region.name}`);
+    }
+
+    // ==================== 显示通知 ====================
+    function showNotification(title, message) {
+      // 移除旧的通知
+      const oldNotification = document.getElementById('temp-notification');
+      if (oldNotification) oldNotification.remove();
+
+      const notification = document.createElement('div');
+      notification.id = 'temp-notification';
+      notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: rgba(0,0,0,0.9);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        border-left: 4px solid #ffd700;
+        z-index: 2000;
+        min-width: 250px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        animation: slideIn 0.3s ease;
+      `;
+
+      notification.innerHTML = `
+        <div style="color: #ffd700; font-weight: bold; margin-bottom: 5px;">${title}</div>
+        <div style="font-size: 14px; color: #ddd;">${message}</div>
+      `;
+
+      document.body.appendChild(notification);
+
+      // 3秒后自动移除
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    // ==================== 页面初始化 ====================
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('大脑交互式学习平台初始化...');
+
+      // 初始化大脑地图
+      initBrainMap();
+
+      // 初始化其他功能
+      initBasicFunctions();
+
+      console.log('初始化完成');
+    });
+
+    // ==================== 初始化基本功能 ====================
+    function initBasicFunctions() {
+      // 关闭详细视图
+      document.getElementById('closeDetail').addEventListener('click', () => {
+        document.getElementById('detail-section').classList.remove('active');
+      });
+
+      // 游戏跳转
+      document.getElementById('game1Btn').addEventListener('click', () => {
+        const gameUrl = 'games/xyx1.html';
+        window.open(gameUrl, '_blank');
+      });
+
+      document.getElementById('game2Btn').addEventListener('click', () => {
+        const gameUrl = 'games/xyx3.html';
+        window.open(gameUrl, '_blank');
+      });
+
+      // 视频跳转
+      document.getElementById('video1Btn').addEventListener('click', () => {
+        window.open('https://www.bilibili.com/video/BV1ds421M7sY?t=43.1', '_blank');
+      });
+
+      document.getElementById('video2Btn').addEventListener('click', () => {
+        window.open('https://www.bilibili.com/video/BV1kD4y1X7qA?t=73.5', '_blank');
+      });
+
+      // 平滑滚动
+      document.querySelectorAll('nav a').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+          e.preventDefault();
+          const targetId = this.getAttribute('href');
+          const targetSection = document.querySelector(targetId);
+          if (targetSection) {
+            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+
+      // 添加动画样式
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideOut {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // ==================== 调试函数（保留但不显示） ====================
+    // 这些函数仍然存在，但调试面板已隐藏
+    window.showCurrentParams = function() {
+      console.log('当前参数:');
+      console.log('缩放比例:', currentScale);
+      console.log('偏移距离:', currentShift);
+      console.log('推荐值: 缩放 1.45, 偏移 0');
+    };
+
+    window.applyOptimizedParams = function() {
+      currentScale = 1.45;
+      currentShift = 0;
+      createImageMap(currentScale, currentShift);
+      initMapEvents();
+      showNotification('优化参数已应用', '缩放: 1.45 | 偏移: 0');
+    };
+
+    window.testHighlights = function() {
+      console.log('测试高亮效果...');
+
+      // 隐藏所有高亮
+      Object.values(highlightElements).forEach(el => {
+        el.classList.remove('active');
+      });
+
+      // 依次显示所有高亮区域
+      let index = 0;
+      const regionIds = Object.keys(highlightElements);
+      const hoverInfo = document.getElementById('hoverInfo');
+      const regionName = document.getElementById('regionName');
+      const regionBrief = document.getElementById('regionBrief');
+
+      const interval = setInterval(() => {
+        // 隐藏之前的高亮
+        if (index > 0) {
+          const prevId = regionIds[index - 1];
+          highlightElements[prevId]?.classList.remove('active');
+        }
+
+        // 显示当前高亮
+        const currentId = regionIds[index];
+        const region = brainRegions[currentId];
+
+        if (highlightElements[currentId]) {
+          highlightElements[currentId].classList.add('active');
+
+          // 更新提示信息
+          regionName.textContent = region.name;
+          regionBrief.textContent = region.brief;
+          hoverInfo.classList.add('show');
+
+          console.log(`显示高亮: ${region.name}`);
+        }
+
+        index++;
+
+        if (index >= regionIds.length) {
+          clearInterval(interval);
+
+          // 最后隐藏所有高亮
+          setTimeout(() => {
+            regionIds.forEach(id => {
+              highlightElements[id]?.classList.remove('active');
+            });
+            hoverInfo.classList.remove('show');
+
+            showNotification('高亮测试完成', '所有脑区高亮效果已测试');
+          }, 1000);
+        }
+      }, 1000);
+    };
+
+    // 应用优化参数
+    setTimeout(() => {
+      if (typeof applyOptimizedParams === 'function') {
+        applyOptimizedParams();
+      }
+    }, 500);
+  </script>
+</body>
+</html>
